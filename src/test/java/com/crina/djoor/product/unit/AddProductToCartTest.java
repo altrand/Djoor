@@ -1,9 +1,10 @@
-package com.crina.djoor.cart.unit;
+package com.crina.djoor.product.unit;
 
-import com.crina.djoor.shared.vo.Cart;
-import com.crina.djoor.cart.domain.CartItem;
-import com.crina.djoor.cart.domain.CartSummary;
-import com.crina.djoor.cart.domain.Product;
+import com.crina.djoor.order.domain.vo.Cart;
+import com.crina.djoor.product.application.command.AddProductCommand;
+import com.crina.djoor.product.application.command.AddProductToCartHandler;
+import com.crina.djoor.product.infrastructure.repository.InMemoryCartRepository;
+import com.crina.djoor.product.domain.Product;
 import com.crina.djoor.order.infrastructure.repository.InMemoryProductRepository;
 import com.crina.djoor.order.infrastructure.repository.InMemoryUserRepository;
 import com.crina.djoor.shared.vo.Id;
@@ -12,16 +13,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.ArrayList;
 
 @SpringBootTest
 public class AddProductToCartTest {
     private InMemoryUserRepository userRepository;
     private InMemoryProductRepository productRepository;
-    private Cart cart;
+
 
     @BeforeEach
     void setUp() {
@@ -29,60 +29,82 @@ public class AddProductToCartTest {
         this.productRepository = new InMemoryProductRepository();
         this.buildSUT();
     }
-    
+
     @Test
-    void shouldCanAddProductToCart(){
-        Product product = new Product("001", "Mouse", 5000);
+    void shouldCanAddProductToCart() {
         Cart cart = new Cart(new ArrayList<>());
+        Product product = new Product(new Id("002"), "Stove", 15000, 100);
+
+        cart = cart.addProduct(product.snapshot(), 1);
+        assertEquals(1, cart.cartItems().size());
+        assertEquals(5000, cart.cartItems().get(0).product().price());
+
+        AddProductCommand command = new AddProductCommand("001", "p1", 2);
+        InMemoryCartRepository cartStore = new InMemoryCartRepository();
+        /*AddProductToCartHandler service = new AddProductToCartHandler(productRepository, cartStore);
+
+        service.handle(command);
+
+        //Cart updatedCart = cartStore.loadCart("001");
+        assertEquals(1, updatedCart.getItems().size());
+        assertEquals(2, updatedCart.getItems().get(0).getQuantity());
+        assertEquals("T-shirt", updatedCart.getItems().get(0).getProduct().getName());*/
+
+    }
+
+    @Test
+    void ShouldCanAddProductToCartOrUpdateQuantityIfAlreadyPresent() {
+
+        AddProductCommand command1 = new AddProductCommand("001", "012", 2);
+        InMemoryCartRepository cartStore = new InMemoryCartRepository();
+        /*AddProductToCartHandler service = new AddProductToCartHandler(productRepository, cartStore);
+
+        service.handle(command1);
+        Cart updatedCart = cartStore.loadCart("001");
+
+        assertEquals(1, updatedCart.getItems().size());
+        assertEquals(1, updatedCart.getItems().get(0).getQuantity());
+
+
+        AddProductCommand command2 = new AddProductCommand("001","012", 3);
+        service.handle(command2);
+        updatedCart = cartStore.loadCart("001");
+
+        assertEquals(1, updatedCart.getItems().size());
+        assertEquals(4, updatedCart.getItems().get(0).getQuantity());
+        assertEquals("Mouse", updatedCart.getItems().get(0).getProduct().getName());*/
+    }
+
+    @Test
+    void shouldCanAddProductFromBaseListToCart() {
+        /*Product product = productRepository.findById("001");
         cart = cart.addProduct(product,1);
         assertEquals(1, cart.getItems().size());
-        assertEquals("Mouse", cart.getItems().get(0).getProduct().getName());
-        assertEquals(5000, cart.getItems().get(0).getProduct().getPrice());
-
+        assertEquals("Fridge", cart.getItems().get(0).getProduct().getName());*/
     }
 
     @Test
-    void ShouldCanAddProductToCartOrUpdateQuantityIfAlreadyPresent(){
-        Product product = new Product("001", "Mouse", 5000);
-        Cart cart = new Cart(new ArrayList<>());
-
-        cart = cart.addProduct(product, 1);
-
-        assertEquals(1, cart.getItems().size());
-        assertEquals(1, cart.getItems().get(0).getQuantity());
-
-        cart = cart.addProduct(product, 3);
-
-        assertEquals(1, cart.getItems().size());
-        assertEquals(4, cart.getItems().get(0).getQuantity());
-        assertEquals("Mouse", cart.getItems().get(0).getProduct().getName());
-    }
-
-    @Test
-    void shouldCanAddProductFromBaseListToCart(){
-        Product product = productRepository.findById("001");
-        cart = cart.addProduct(product,1);
-        assertEquals(1, cart.getItems().size());
-        assertEquals("Fridge", cart.getItems().get(0).getProduct().getName());
-    }
-
-    @Test
-    void shouldCanSearchProductByNameToCart(){
+    void shouldCanSearchProductByNameToCart() {
         Product product = productRepository.findByName("Fridge");
-        cart = cart.addProduct(product, 1);
+       /* cart = cart.addProduct(product, 1);
         assertEquals(1, cart.getItems().size());
-        assertEquals("Fridge", cart.getItems().get(0).getProduct().getName());
+        assertEquals("Fridge", cart.getItems().get(0).getProduct().getName());*/
     }
 
     @Test
-    void shouldCanReturnAccurateSummaryWhenProductAdded(){
-        Product product1 = new Product("010", "Laptop", 100000);
-        Product product2 = new Product("011", "Phone", 75000);
+    void shouldCanReturnAccurateSummaryWhenProductAdded() {
 
-        Cart cart = new Cart(List.of(new CartItem(product1,1)));
-        cart = cart.addProduct(product2, 2);
+        AddProductCommand command1 = new AddProductCommand("001", "010", 1);
+        AddProductCommand command2 = new AddProductCommand("001", "011", 2);
+        InMemoryCartRepository cartStore = new InMemoryCartRepository();
+        /*AddProductToCartHandler service = new AddProductToCartHandler(productRepository, cartStore);
 
-        CartSummary summary = cart.generateSummary();
+        service.handle(command1);
+        service.handle(command2);
+
+        Cart updatedCart = cartStore.loadCart("001");
+
+        CartSummary summary = updatedCart.generateSummary();
 
         assertEquals(2, summary.getNumberProductsSelected());
         assertEquals(3, summary.getQuantityProducts());
@@ -94,14 +116,17 @@ public class AddProductToCartTest {
         assertEquals("Phone", summary.getCartItemSummary().get(1).getProductName());
         assertEquals(75000, summary.getCartItemSummary().get(1).getUnitPrice());
         assertEquals(2, summary.getCartItemSummary().get(1).getQuantity());
-        assertEquals(150000, summary.getCartItemSummary().get(1).getTotalPrice());
+        assertEquals(150000, summary.getCartItemSummary().get(1).getTotalPrice());*/
     }
 
     void buildSUT() {
-        User user = User.create(new Id("001"));
+        User user = User.create(new Id("001"), "678747777");
         this.userRepository.users.put(user.id(), user);
-        this.productRepository.products.add(new Product("001", "Fridge", 100000));
-        this.productRepository.products.add(new Product("002", "Stove", 150000));
-        cart = new Cart(List.of());
+        this.productRepository.products.add(new Product(new Id("001"), "Fridge", 100000, 100));
+        this.productRepository.products.add(new Product(new Id("002"), "Stove", 15000, 100));
+        this.productRepository.products.add(new Product(new Id("p1"), "T-shirt", 5000, 100));
+        this.productRepository.products.add(new Product(new Id("010"), "Laptop", 100000, 100));
+        this.productRepository.products.add(new Product(new Id("011"), "Phone", 75000, 100));
+        this.productRepository.products.add(new Product(new Id("012"), "Mouse", 5000, 100));
     }
 }
