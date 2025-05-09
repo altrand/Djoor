@@ -73,4 +73,12 @@ public class InMemoryOrderRepository implements OrderRepository {
             OrderItem orderItem = OrderItem.create(item.product().id(), item.quantity(), item.product().price());
         }
     }
+
+    @Override
+    public List<Order> findAllInitiatedByUserId(String userId) {
+        return orders.values().stream()
+                .filter(order -> order.snapshot().state() == OrderState.INITIATED
+                        && order.snapshot().userId().equals(userId))
+                .collect(Collectors.toList());
+    }
 }

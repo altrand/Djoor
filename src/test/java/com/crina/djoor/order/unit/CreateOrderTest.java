@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.sql.Date;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,35 +61,42 @@ public class CreateOrderTest {
 
     @Test
     void shouldAddProductToExistingInitiatedOrderOrCreateNewOne() {
-        // Arrange
+
         String userId = "user-001";
         String orderId = "order-001";
-        String productId = "product-123";
-        int quantity = 2;
+        String productId1 = "product-001";
+        String productId2 = "product-002";
 
-        Product product = new Product(new Id(productId), "Casque", 50000, 100);
-        productRepository.add(product);
 
+        Product product1 = new Product(new Id(productId1), "Casque", 50000, 100);
+        Product product2 = new Product(new Id(productId2), "Souris", 5000, 100);
+
+        productRepository.add(product1);
+        productRepository.add(product2);
         // Cas 1 : pas de commande initiée → on crée une nouvelle commande
-        CreateOrderCommand command1 = new CreateOrderCommand(orderId, userId, new OrderProductCommand(productId, quantity));
+        CreateOrderCommand command1 = new CreateOrderCommand(orderId, userId, new OrderProductCommand(productId1, 2));
         var response1 = this.createOrderHandle(command1);
 
         assertTrue(response1.response.isCreated);
         Order order1 = orderRepository.orders.get(orderId); // suppose une implémentation en mémoire
         assertNotNull(order1);
         assertEquals(1, order1.snapshot().cart().items().size());
-
+        assertEquals(100000, order1.snapshot().amount());
         // Cas 2 : une commande INITIATED existe → on ajoute un produit à la même commande
-        CreateOrderCommand command2 = new CreateOrderCommand("unused-id", userId, new OrderProductCommand(productId, 1));
+        CreateOrderCommand command2 = new CreateOrderCommand("unused-id", userId, new OrderProductCommand(productId2, 1));
         var response2 = createOrderHandle(command2);
+        assertTrue(response2.response.isCreated);
 
         // L'ID de la commande reste celui d'origine
         assertEquals(orderId, order1.snapshot().id());
         //assertEquals(1, orderRepository.findInitiatedByUserId(userId).get().);
 
         Order updatedOrder = orderRepository.orders.get(orderId);
-        assertEquals(1, updatedOrder.snapshot().cart().items().size());
-        assertEquals(3, updatedOrder.snapshot().cart().items().get(0).quantity()); // 2 + 1
+        List<Order> initiatedOrders = orderRepository.findAllInitiatedByUserId(userId);
+        assertEquals(1, initiatedOrders.size());
+        assertEquals(2, updatedOrder.snapshot().cart().items().size());
+        assertEquals(3, updatedOrder.snapshot().cart().generateSummary().quantityProduct()); // 2 + 1
+        assertEquals(105000, updatedOrder.snapshot().amount());
     }
 
 
@@ -157,6 +165,32 @@ public class CreateOrderTest {
         field.set(order, new Date(System.currentTimeMillis() - (2 * 60 * 60 * 1000 + 1000)));
 
         assertThrows(IllegalStateException.class, order::cancel);
+    }
+
+    @Test
+    void shouldAddProductToExistingInitiatedOrderWithoutCreatingNewOne() {
+        String userId = "user-001";
+        String orderId1 = "order-001";
+        String orderId2 = "order-002";
+        String productId1 = "product-001";
+        String productId2 = "product-002";
+        // Crée une commande INITIÉE existante
+        Product product = new Product(new Id(productId1), "Casque", 50000, 100);
+        productRepository.add(product);
+        Order existingOrder = Order.create(new Id(orderId1), userId, product.snapshot(), 1);
+        orderRepository.add(existingOrder);
+
+        // Prépare la commande avec un nouveau produit
+        CreateOrderCommand command = new CreateOrderCommand(orderId2, userId, new OrderProductCommand(productId2, 2));
+        var response = this.createOrderHandle(command);
+
+
+        List<Order> initiatedOrders = orderRepository.findAllInitiatedByUserId(userId);
+        assertEquals(1, initiatedOrders.size());
+        Order updatedOrder = initiatedOrders.get(0);
+
+        assertTrue(updatedOrder.snapshot().id().equals(orderId1)); // Vérifie que c'est bien l'ancienne commande
+        assertTrue(response.response.isCreated);
     }
 
     @Test

@@ -19,4 +19,6 @@ public interface OrderRepository {
     List<OrderItem> findOrderItemsByOrderId(String orderId);
 
     void addOrUpdate(Order order);
+
+    List<Order> findAllInitiatedByUserId(String userId);
 }

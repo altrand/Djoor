@@ -1,10 +1,8 @@
 package com.crina.djoor.order.domain.vo;
 
-import com.crina.djoor.product.domain.Product;
 import com.crina.djoor.product.domain.snapshot.ProductSnapshot;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,9 +38,7 @@ public record Cart(List<CartItem> cartItems) {
     }
 
     public double price() {
-        return cartItems.stream()
-                .mapToDouble(item -> item.product().price() * item.quantity())
-                .sum();
+        return cartItems.stream().mapToDouble(item -> item.product().price() * item.quantity()).sum();
     }
 
     public CartSummary generateSummary() {
@@ -58,9 +54,7 @@ public record Cart(List<CartItem> cartItems) {
             totalQuantity += quantity;
             totalCost += cost;
 
-            CartItemSummary cartItemSummary = new CartItemSummary(
-                    quantity, unitPrice,
-                    cost);
+            CartItemSummary cartItemSummary = new CartItemSummary(quantity, unitPrice, cost);
             cartItemSummaryList.add(cartItemSummary);
         }
         return new CartSummary(cartItemSummaryList.size(), totalQuantity, totalCost, cartItemSummaryList);

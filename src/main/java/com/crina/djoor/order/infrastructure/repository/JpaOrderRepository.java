@@ -65,4 +65,9 @@ public class JpaOrderRepository implements OrderRepository {
     public void addOrUpdate(Order order) {
 
     }
+
+    @Override
+    public List<Order> findAllInitiatedByUserId(String userId) {
+        return List.of();
+    }
 }
