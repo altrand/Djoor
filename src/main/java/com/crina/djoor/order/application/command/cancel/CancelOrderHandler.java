@@ -1,6 +1,5 @@
 package com.crina.djoor.order.application.command.cancel;
 
-import com.crina.djoor.order.application.command.pay.PayOrderResponse;
 import com.crina.djoor.order.domain.Order;
 import com.crina.djoor.order.domain.OrderRepository;
 import com.crina.djoor.shared.cqrs.CommandHandler;
@@ -11,6 +10,7 @@ public class CancelOrderHandler implements CommandHandler<CancelOrderCommand, Ge
     private final OrderRepository orderRepository;
 
     public CancelOrderHandler(OrderRepository orderRepository) {
+
         this.orderRepository = orderRepository;
     }
 

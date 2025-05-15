@@ -8,12 +8,14 @@ public class Product {
     private final String name;
     private final double price;
     private int nbOfProductsInStock;
+    // private boolean isInCurrentSale = false;
 
-    public Product(Id id, String name, double price, int nbOfProductsInStock) {
+    private Product(Id id, String name, double price, int nbOfProductsInStock) {
         this.id = id;
         this.name = name;
         this.price = price;
         this.nbOfProductsInStock = nbOfProductsInStock;
+        //this.isInCurrentSale = false;
     }
 
     public static Product create(
@@ -26,24 +28,28 @@ public class Product {
         return product;
     }
 
-    public static Product createFromDB(
+    /*public static Product createFromDB(
             Id id,
             String productName,
             double price,
             int nbOfProductsInStock
     ) {
         return new Product(id, productName, price, nbOfProductsInStock);
-    }
+    }*/
 
-    public String getName() {
+    public String name() {
         return name;
     }
 
-    public double getPrice() {
+    public int stock() {
+        return nbOfProductsInStock;
+    }
+
+    public double price() {
         return price;
     }
 
-    public Id getId() {
+    public Id id() {
         return id;
     }
 
@@ -59,14 +65,22 @@ public class Product {
     }
 
     public void validate() {
-        if (this.getPrice() <= 0) {
+        if (this.price() <= 0) {
             throw new IllegalArgumentException("Product price must be greater than zero.");
         }
-        if (this.getName() == null || this.getName().isBlank()) {
+        if (this.name() == null || this.name().isBlank()) {
             throw new IllegalArgumentException("Product name must not be empty.");
         }
-        if (this.getId() == null) {
+        if (this.id() == null) {
             throw new IllegalArgumentException("Product ID must not be null.");
         }
     }
+
+    /*public boolean isInCurrentSale() {
+        return isInCurrentSale;
+    }
+
+    public void setInCurrentSale(boolean inCurrentSale) {
+        isInCurrentSale = inCurrentSale;
+    }*/
 }

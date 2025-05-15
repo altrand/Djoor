@@ -1,7 +1,7 @@
-package com.crina.djoor.order.infrastructure.repository;
+package com.crina.djoor.user.infrastructure.repository;
 
-import com.crina.djoor.user.User;
-import com.crina.djoor.user.UserRepository;
+import com.crina.djoor.user.domain.User;
+import com.crina.djoor.user.domain.UserRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -15,10 +15,12 @@ public class InMemoryUserRepository implements UserRepository {
     @Override
     public void add(User user) {
 
+        users.put(user.id(), user);
     }
 
     @Override
     public Optional<User> ofId(String userId) {
+
         return Optional.ofNullable(users.get(userId));
     }
 

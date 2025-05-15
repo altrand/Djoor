@@ -24,7 +24,11 @@ public class PayOrderHandler implements CommandHandler<PayOrderCommand, GenericR
             throw new IllegalArgumentException("Order not found.");
         }
 
-        order.pay();
+        if (!order.snapshot().userId().equals(command.userId)) {
+            throw new IllegalArgumentException("Unauthorized access to order.");
+        }
+
+        order.pay(command.paymentMethod);
         orderRepository.update(order);
 
         res.orderId = order.snapshot().id();

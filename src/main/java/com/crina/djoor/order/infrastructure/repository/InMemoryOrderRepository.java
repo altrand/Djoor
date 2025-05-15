@@ -5,6 +5,7 @@ import com.crina.djoor.order.domain.OrderItem;
 import com.crina.djoor.order.domain.OrderRepository;
 import com.crina.djoor.order.domain.enums.OrderState;
 import com.crina.djoor.order.domain.vo.CartItem;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -20,7 +21,7 @@ public class InMemoryOrderRepository implements OrderRepository {
     @Override
     public void add(Order order) {
         orders.put(order.snapshot().id(), order);
-        for (CartItem item : order.snapshot().cart().items()) {
+        for (CartItem item : order.items()) {
             OrderItem orderItem = OrderItem.create(item.product().id(), item.quantity(), item.product().price());
         }
     }
@@ -55,7 +56,7 @@ public class InMemoryOrderRepository implements OrderRepository {
         if (order == null) {
             return Collections.emptyList();
         }
-        return order.snapshot().cart()
+        return order
                 .items()
                 .stream()
                 .map(item -> OrderItem.create(
@@ -69,7 +70,7 @@ public class InMemoryOrderRepository implements OrderRepository {
     @Override
     public void addOrUpdate(Order order) {
         orders.put(order.snapshot().id(), order);
-        for (CartItem item : order.snapshot().cart().items()) {
+        for (CartItem item : order.items()) {
             OrderItem orderItem = OrderItem.create(item.product().id(), item.quantity(), item.product().price());
         }
     }

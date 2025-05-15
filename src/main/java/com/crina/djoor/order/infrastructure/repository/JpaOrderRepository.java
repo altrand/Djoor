@@ -6,6 +6,7 @@ import com.crina.djoor.order.domain.OrderRepository;
 import com.crina.djoor.order.domain.exceptions.ErrorOnSaveOrderException;
 import com.crina.djoor.order.infrastructure.model.OrderEntity;
 import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
@@ -25,7 +26,8 @@ public class JpaOrderRepository implements OrderRepository {
     @Override
     public void add(Order order) throws ErrorOnSaveOrderException {
         try {
-            orderRepository.save(OrderEntity.createFromDomain(order));
+            OrderEntity entity = OrderEntity.createFromDomain(order);
+            orderRepository.save(entity);
         } catch (
                 IllegalArgumentException |
                 ConstraintViolationException |

@@ -1,10 +1,15 @@
 package com.crina.djoor.order.infrastructure.repository;
 
 
+import com.crina.djoor.order.domain.Order;
 import com.crina.djoor.order.domain.OrderItem;
 import com.crina.djoor.order.domain.OrderItemRepository;
 import com.crina.djoor.order.domain.exceptions.ErrorOnSaveOrderException;
+import com.crina.djoor.order.domain.vo.TopSellingProduct;
 import org.springframework.stereotype.Component;
+
+import java.util.Date;
+import java.util.List;
 
 @Component
 public class JpaOrderItemRepository implements OrderItemRepository {
@@ -27,6 +32,16 @@ public class JpaOrderItemRepository implements OrderItemRepository {
         ) {
             throw new ErrorOnSaveOrderException(e.getMessage());
         }*/
+    }
+
+    @Override
+    public void addOrder(Order order) throws ErrorOnSaveOrderException {
+
+    }
+
+    @Override
+    public List<TopSellingProduct> findSoldProductsBetween(Date from, Date to) {
+        return List.of();
     }
 
 

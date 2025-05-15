@@ -10,7 +10,7 @@ public class OrderItem {
     public int quantity;
     public double price;
 
-    private OrderItem(String productId, int quantity, double price) {
+    public OrderItem(String productId, int quantity, double price) {
         this.id = new Id(productId);
         this.productId = productId;
         this.quantity = quantity;

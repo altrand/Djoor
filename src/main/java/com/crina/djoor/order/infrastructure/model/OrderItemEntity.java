@@ -1,6 +1,13 @@
 package com.crina.djoor.order.infrastructure.model;
 
+import com.crina.djoor.order.domain.Order;
+import com.crina.djoor.order.domain.enums.OrderState;
+import com.crina.djoor.order.domain.vo.Cart;
+import com.crina.djoor.product.domain.snapshot.ProductSnapshot;
 import jakarta.persistence.*;
+
+import java.util.Date;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -19,7 +26,36 @@ public class OrderItemEntity {
     @Column(nullable = false)
     public double price;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private OrderEntity order;
+
+    public OrderItemEntity() {
+    }
+
+    private OrderItemEntity(
+            String productId,
+            double price,
+            int quantity,
+            OrderEntity order
+    ) {
+        this.productId = productId;
+        this.price = price;
+        this.quantity = quantity;
+        this.order = order;
+        this.id = UUID.randomUUID().toString();
+    }
+
+    public static OrderItemEntity create(
+            String productId,
+            double price,
+            int quantity,
+            OrderEntity order
+    ) {
+
+        OrderItemEntity itemEntity = new OrderItemEntity(productId, price, quantity, order);
+
+        return itemEntity;
+    }
+
 }

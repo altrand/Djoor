@@ -34,25 +34,35 @@ public class OrderEntity {
     @Enumerated(EnumType.STRING)
     private OrderState state;
 
-    @OneToMany(mappedBy = "order", fetch = FetchType.EAGER)
-    @Column
+    @OneToMany(mappedBy = "order", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItemEntity> items;
 
     public static OrderEntity createFromDomain(Order order) {
         OrderSnapshot snapshot = order.snapshot();
+
         OrderEntity orderEntity = new OrderEntity();
         orderEntity.amount = snapshot.amount();
         orderEntity.id = snapshot.id();
         orderEntity.userId = snapshot.userId();
         orderEntity.state = snapshot.state();
-        orderEntity.createdAt = new Date();
+        orderEntity.createdAt = snapshot.createdAt();
+
+        // Créer les OrderItemEntity à partir du panier
+        orderEntity.items = order.items().stream()
+                .map(cartItem -> {
+                    OrderItemEntity itemEntity = OrderItemEntity.create(cartItem.product().id(), cartItem.product().price(), cartItem.quantity(), orderEntity);
+                    return itemEntity;
+                })
+                .toList();
+
         return orderEntity;
     }
+
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         OrderEntity that = (OrderEntity) o;
-        return Double.compare(amount, that.amount) == 0 ;
+        return Double.compare(amount, that.amount) == 0;
     }
 }

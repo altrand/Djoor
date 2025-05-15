@@ -1,4 +1,4 @@
-package com.crina.djoor.user;
+package com.crina.djoor.user.domain;
 
 import com.crina.djoor.shared.vo.Id;
 
@@ -6,7 +6,7 @@ public class User {
     private Id id;
     private String phoneNumber;
 
-    public User(Id id, String phoneNumber) {
+    private User(Id id, String phoneNumber) {
         this.id = id;
         this.phoneNumber = phoneNumber;
     }
@@ -16,6 +16,19 @@ public class User {
     }
 
     public String id() {
+
         return id.value();
+    }
+
+    public String phoneNumber() {
+        return phoneNumber;
+    }
+
+    public static User createFromDB(
+            Id id,
+            String phoneNumber
+    ) {
+        var user =  new User(id, phoneNumber);
+        return user;
     }
 }

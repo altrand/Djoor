@@ -1,4 +1,4 @@
-package com.crina.djoor.user;
+package com.crina.djoor.user.domain;
 
 import java.util.Optional;
 

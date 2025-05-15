@@ -1,9 +1,15 @@
 package com.crina.djoor.order.domain.vo;
 
+import com.crina.djoor.order.domain.GlobalCartDiscountPolicy;
+import com.crina.djoor.order.domain.SaleCampaign;
+import com.crina.djoor.order.domain.snapshot.SaleCampaignSnapshot;
+import com.crina.djoor.product.domain.ProductDiscountPolicy;
 import com.crina.djoor.product.domain.snapshot.ProductSnapshot;
+import com.crina.djoor.shared.vo.Amount;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 public record Cart(List<CartItem> cartItems) {
@@ -16,22 +22,36 @@ public record Cart(List<CartItem> cartItems) {
         return Collections.unmodifiableList(cartItems);
     }
 
-    public Cart addProduct(ProductSnapshot productSnapshot, int quantity) {
-
+    public Cart addProduct(ProductSnapshot productSnapshot, int quantity, SaleCampaignSnapshot saleCampaignSnapshot, ProductDiscountPolicy productDiscountPolicy) {
         List<CartItem> updatedItems = new ArrayList<>();
 
         boolean isFound = false;
         for (CartItem item : cartItems) {
             if (item.product().id().equals(productSnapshot.id())) {
                 int newQuantity = item.quantity() + quantity;
-                updatedItems.add(new CartItem(productSnapshot, newQuantity));
+                if (saleCampaignSnapshot != null && saleCampaignSnapshot.isActive(new Date()) && newQuantity > 20) {
+                    throw new IllegalStateException("Impossible d'ajouter plus de 20 unités d'un même produit pendant la période de solde.");
+                }
+                updatedItems.add(new CartItem(item.product(), newQuantity));
                 isFound = true;
             } else {
                 updatedItems.add(item);
             }
         }
+
         if (!isFound) {
-            updatedItems.add(new CartItem(productSnapshot, quantity));
+            if (saleCampaignSnapshot != null && saleCampaignSnapshot.isActive(new Date()) && quantity > 20) {
+                throw new IllegalStateException("Impossible d'ajouter plus de 20 unités d'un même produit pendant la période de solde.");
+            }
+
+            ProductSnapshot discountedSnapshot = productSnapshot;
+
+            if ((saleCampaignSnapshot == null || !saleCampaignSnapshot.isActive(new Date())) && productDiscountPolicy != null) {
+                double discountedPrice = productDiscountPolicy.applyDiscount(productSnapshot);
+                discountedSnapshot = new ProductSnapshot(productSnapshot.id(), discountedPrice);
+            }
+
+            updatedItems.add(new CartItem(discountedSnapshot, quantity));
         }
 
         return new Cart(updatedItems);
@@ -61,20 +81,36 @@ public record Cart(List<CartItem> cartItems) {
 
     }
 
+    public Cart applyDiscount(SaleCampaignSnapshot campaign) {
+        Date currentDate = new Date();
 
-
-    /*public void validate() {
-        if (orderItems == null || orderItems().isEmpty()) {
-            throw new IllegalStateException("The cart must contain at least one item.");
+        if (campaign == null || !campaign.isActive(currentDate)) {
+            return this;
         }
 
-        for (OrderItem item : orderItems()) {
-            if (item.quantity <= 0) {
-                throw new IllegalStateException("Item quantity must be greater than zero: " + item.productId);
-            }
-            if (item.price <= 0) {
-                throw new IllegalStateException("Item price must be greater than zero: " + item.productId);
+        List<CartItem> discountedItems = new ArrayList<>();
+        for (CartItem item : cartItems) {
+            String productId = item.product().id();
+
+            if (campaign.isProductInSale(productId)) {
+                ProductSnapshot discountedProduct = new ProductSnapshot(
+                        productId,
+                        campaign.applyDiscount(item.product().price())
+                );
+                discountedItems.add(new CartItem(discountedProduct, item.quantity()));
+            } else {
+                discountedItems.add(item);
             }
         }
-    }*/
+
+        return new Cart(discountedItems);
+    }
+
+    public Amount computeTotalAmount() {
+        double rawTotal = cartItems.stream()
+                .mapToDouble(item -> item.product().price() * item.quantity())
+                .sum();
+        double discountedTotal = GlobalCartDiscountPolicy.applyDiscountIfEligible(this, rawTotal);
+        return new Amount(discountedTotal);
+    }
 }
