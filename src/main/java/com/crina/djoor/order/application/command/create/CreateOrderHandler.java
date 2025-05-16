@@ -41,8 +41,6 @@ public class CreateOrderHandler implements CommandHandler<CreateOrderCommand, Ge
     public GenericResponse<CreateOrderResponse> handle(CreateOrderCommand command) throws ErrorOnSaveOrderException {
         var generic = new GenericResponse<CreateOrderResponse>();
         CreateOrderResponse res = new CreateOrderResponse();
-        PromoCodeSnapshot promoCodeSnapshot = null;
-        SaleCampaignSnapshot saleCampaignSnapshot = null;
 
         try {
             Product product = this.productRepository.ofId(command.orderProductCommand.productId);
@@ -51,35 +49,30 @@ public class CreateOrderHandler implements CommandHandler<CreateOrderCommand, Ge
             }
 
             PromoCode promoCode = this.promoCodeRepository.ofCode(command.promoCode);
-            if (promoCode != null) {
-                promoCodeSnapshot = promoCode.snapshot();
-            }
 
             SaleCampaign saleCampaign = this.saleCampaignRepository.ofCode(command.saleCampaignCode);
-            if (saleCampaign != null) {
-                saleCampaignSnapshot = saleCampaign.snapshot();
-            }
+
             // Vérifie s'il existe déjà une commande INITIATED pour cet utilisateur
             Optional<Order> optionalOrder = orderRepository.findInitiatedByUserId(command.userId);
 
             if (optionalOrder.isPresent()) {
                 // On récupère la commande existante
-                var snapshot = optionalOrder.get().snapshot();
-                List<OrderItem> orderItems = orderRepository.findOrderItemsByOrderId(snapshot.id());
+                var order = optionalOrder.get();
+                List<OrderItem> orderItems = orderRepository.findOrderItemsByOrderId(order.id());
 
                 Order existingOrder = Order.reconstructFromDatabase(
-                        new Id(snapshot.id()),
-                        snapshot.userId(),
+                        new Id(order.id()),
+                        order.userId(),
                         orderItems,
-                        snapshot.deliveryMethod(),
-                        snapshot.giftOptions(),
-                        snapshot.createdAt(),
+                        order.deliveryMethod(),
+                        order.giftOptions(),
+                        order.createdAt(),
                         null,
                         null
                 );
 
                 // Ajoute le produit à la commande existante
-                existingOrder.addProduct(product.snapshot(), command.orderProductCommand.nbOfProduct, saleCampaignSnapshot, null);
+                existingOrder.addProduct(product.snapshot(), command.orderProductCommand.nbOfProduct, saleCampaign, null);
                 orderRepository.addOrUpdate(existingOrder);
 
                 res.orderId = existingOrder.snapshot().id();
@@ -95,9 +88,9 @@ public class CreateOrderHandler implements CommandHandler<CreateOrderCommand, Ge
                     command.orderProductCommand.nbOfProduct,
                     command.deliveryMethod,
                     command.giftOptions,
-                    saleCampaignSnapshot,
+                    saleCampaign,
                     command.productDiscountPolicy,
-                    promoCodeSnapshot
+                    promoCode
             );
 
             orderRepository.add(newOrder);

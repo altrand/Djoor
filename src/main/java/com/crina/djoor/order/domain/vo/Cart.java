@@ -22,14 +22,14 @@ public record Cart(List<CartItem> cartItems) {
         return Collections.unmodifiableList(cartItems);
     }
 
-    public Cart addProduct(ProductSnapshot productSnapshot, int quantity, SaleCampaignSnapshot saleCampaignSnapshot, ProductDiscountPolicy productDiscountPolicy) {
+    public Cart addProduct(ProductSnapshot productSnapshot, int quantity, SaleCampaign saleCampaign, ProductDiscountPolicy productDiscountPolicy) {
         List<CartItem> updatedItems = new ArrayList<>();
 
         boolean isFound = false;
         for (CartItem item : cartItems) {
             if (item.product().id().equals(productSnapshot.id())) {
                 int newQuantity = item.quantity() + quantity;
-                if (saleCampaignSnapshot != null && saleCampaignSnapshot.isActive(new Date()) && newQuantity > 20) {
+                if (saleCampaign != null && saleCampaign.isActive(new Date()) && newQuantity > 20) {
                     throw new IllegalStateException("Impossible d'ajouter plus de 20 unités d'un même produit pendant la période de solde.");
                 }
                 updatedItems.add(new CartItem(item.product(), newQuantity));
@@ -40,13 +40,13 @@ public record Cart(List<CartItem> cartItems) {
         }
 
         if (!isFound) {
-            if (saleCampaignSnapshot != null && saleCampaignSnapshot.isActive(new Date()) && quantity > 20) {
+            if (saleCampaign != null && saleCampaign.isActive(new Date()) && quantity > 20) {
                 throw new IllegalStateException("Impossible d'ajouter plus de 20 unités d'un même produit pendant la période de solde.");
             }
 
             ProductSnapshot discountedSnapshot = productSnapshot;
 
-            if ((saleCampaignSnapshot == null || !saleCampaignSnapshot.isActive(new Date())) && productDiscountPolicy != null) {
+            if ((saleCampaign == null || !saleCampaign.isActive(new Date())) && productDiscountPolicy != null) {
                 double discountedPrice = productDiscountPolicy.applyDiscount(productSnapshot);
                 discountedSnapshot = new ProductSnapshot(productSnapshot.id(), discountedPrice);
             }
@@ -81,7 +81,7 @@ public record Cart(List<CartItem> cartItems) {
 
     }
 
-    public Cart applyDiscount(SaleCampaignSnapshot campaign) {
+    public Cart applyDiscount(SaleCampaign campaign) {
         Date currentDate = new Date();
 
         if (campaign == null || !campaign.isActive(currentDate)) {

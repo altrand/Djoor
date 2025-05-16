@@ -333,17 +333,17 @@ public class CreateOrderTest {
         Product product = Product.create(new Id("P-001"), "Chaussure Homme", 10000, 50);
 
         // Étape 3 : Activation de la réduction si le produit est éligible
-        if (saleCampaign.snapshot().isActive(now) && saleCampaign.canAddProduct()) {
+        if (saleCampaign.isActive(now) && saleCampaign.canAddProduct()) {
             saleCampaign.addProduct(product.id().value());
             //product.setInCurrentSale(true);
         }
 
         // Étape 4 : Création de la commande avec ce produit en solde
         var giftOptions = new GiftOptions(false, null, null);
-        Order order = Order.create(new Id("CMD-001"), "User-42", product.snapshot(), 2, DeliveryMethod.STORE_PICKUP, giftOptions, saleCampaign.snapshot(), null, null);
+        Order order = Order.create(new Id("CMD-001"), "User-42", product.snapshot(), 2, DeliveryMethod.STORE_PICKUP, giftOptions, saleCampaign, null, null);
 
         // Étape 5 : Calcul attendu
-        double expectedDiscountedPrice = saleCampaign.snapshot().applyDiscount(product.snapshot().price()); // 10000 - 30% = 7000
+        double expectedDiscountedPrice = saleCampaign.applyDiscount(product.snapshot().price()); // 10000 - 30% = 7000
         double expectedTotal = expectedDiscountedPrice * 2; // 2 produits = 14000
 
         // Étape 6 : Vérification du montant
@@ -429,12 +429,12 @@ public class CreateOrderTest {
         Cart cart = Cart.create();
 
         // Ajouter 20 unités du produit dans le panier (autorisé)
-        cart = cart.addProduct(product.snapshot(), 20, saleCampaign.snapshot(), null);
+        cart = cart.addProduct(product.snapshot(), 20, saleCampaign, null);
 
         // Tenter d'ajouter une 21ème unité (cela doit échouer)
         Cart finalCart = cart;
         assertThrows(IllegalStateException.class, () -> {
-            finalCart.addProduct(product.snapshot(), 1, saleCampaign.snapshot(), null);
+            finalCart.addProduct(product.snapshot(), 1, saleCampaign, null);
         });
     }
 
@@ -480,7 +480,7 @@ public class CreateOrderTest {
                 null,
                 null,
                 null,
-                promoCode.snapshot()
+                promoCode
         );
 
         assertEquals(19800, order.snapshot().amount(), 0.001);

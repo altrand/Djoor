@@ -10,7 +10,4 @@ public record PromoCodeSnapshot(
         Date expirationDate,
         boolean isActive
 ) {
-    public boolean isValid(Date date) {
-        return isActive && date.before(expirationDate);
-    }
 }

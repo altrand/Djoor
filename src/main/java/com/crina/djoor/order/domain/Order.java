@@ -3,6 +3,7 @@ package com.crina.djoor.order.domain;
 import com.crina.djoor.order.domain.enums.DeliveryMethod;
 import com.crina.djoor.order.domain.enums.OrderState;
 import com.crina.djoor.order.domain.enums.PaymentMethod;
+import com.crina.djoor.order.domain.events.productQuantityDecreased;
 import com.crina.djoor.order.domain.exceptions.snapshot.OrderSnapshot;
 import com.crina.djoor.order.domain.snapshot.PromoCodeSnapshot;
 import com.crina.djoor.order.domain.snapshot.SaleCampaignSnapshot;
@@ -12,12 +13,13 @@ import com.crina.djoor.order.domain.vo.CartSummary;
 import com.crina.djoor.order.domain.vo.GiftOptions;
 import com.crina.djoor.product.domain.ProductDiscountPolicy;
 import com.crina.djoor.product.domain.snapshot.ProductSnapshot;
+import com.crina.djoor.shared.domain.AggregateRoot;
 import com.crina.djoor.shared.vo.Amount;
 import com.crina.djoor.shared.vo.Id;
 
 import java.util.*;
 
-public class Order {
+public class Order extends AggregateRoot {
     private Id id;
     private String userId;
     private Cart cart;
@@ -54,24 +56,24 @@ public class Order {
             int quantity,
             DeliveryMethod deliveryMethod,
             GiftOptions giftOptions,
-            SaleCampaignSnapshot saleCampaignSnapshot,
+            SaleCampaign saleCampaign,
             ProductDiscountPolicy productDiscountPolicy,
-            PromoCodeSnapshot promoCodeSnapshot
+            PromoCode promoCode
     ) throws RuntimeException {
 
         Cart cart = Cart.create();
-        cart = cart.addProduct(product, quantity, saleCampaignSnapshot, productDiscountPolicy);
+        cart = cart.addProduct(product, quantity, saleCampaign, productDiscountPolicy);
 
-        cart = cart.applyDiscount(saleCampaignSnapshot);
+        cart = cart.applyDiscount(saleCampaign);
 
         Order order = new Order(id, userId, cart, deliveryMethod, giftOptions, new Date());
 
-        order.amount = order.amount.applyDiscount(promoCodeSnapshot);
+        order.amount = order.amount.applyDiscount(promoCode);
 
         return order;
     }
 
-    public static Order reconstructFromDatabase(Id id, String userId, List<OrderItem> orderItems, DeliveryMethod deliveryMethod, GiftOptions giftOptions, Date createdAt, SaleCampaignSnapshot saleCampaignSnapshot, ProductDiscountPolicy productDiscountPolicy) throws RuntimeException {
+    public static Order reconstructFromDatabase(Id id, String userId, List<OrderItem> orderItems, DeliveryMethod deliveryMethod, GiftOptions giftOptions, Date createdAt, SaleCampaign saleCampaign, ProductDiscountPolicy productDiscountPolicy) throws RuntimeException {
         Cart cart = Cart.create();
 
         for (OrderItem item : orderItems) {
@@ -80,7 +82,7 @@ public class Order {
                     item.snapshot().price()
             );
 
-            cart = cart.addProduct(snapshot, item.snapshot().quantity(), saleCampaignSnapshot, productDiscountPolicy);
+            cart = cart.addProduct(snapshot, item.snapshot().quantity(), saleCampaign, productDiscountPolicy);
         }
 
         return new Order(id, userId, cart, deliveryMethod, giftOptions, createdAt);
@@ -121,6 +123,12 @@ public class Order {
         }
         this.paymentMethod = method;
         this.state = OrderState.PAID;
+
+        publishProductDecreasedEvent();
+    }
+
+    private void publishProductDecreasedEvent() {
+        this.publish(new productQuantityDecreased(cart));
     }
 
     public void cancel() {
@@ -148,8 +156,28 @@ public class Order {
         }
     }
 
-    public void addProduct(ProductSnapshot snapshot, int nbOfProduct, SaleCampaignSnapshot saleCampaignSnapshot, ProductDiscountPolicy productDiscountPolicy) {
-        cart = cart.addProduct(snapshot, nbOfProduct, saleCampaignSnapshot, productDiscountPolicy);
+    public void addProduct(ProductSnapshot snapshot, int nbOfProduct, SaleCampaign saleCampaign, ProductDiscountPolicy productDiscountPolicy) {
+        cart = cart.addProduct(snapshot, nbOfProduct, saleCampaign, productDiscountPolicy);
         this.amount = cart.computeTotalAmount();
+    }
+
+    public String userId() {
+        return this.userId;
+    }
+
+    public DeliveryMethod deliveryMethod() {
+        return this.deliveryMethod;
+    }
+
+    public GiftOptions giftOptions() {
+        return this.giftOptions;
+    }
+
+    public Date createdAt() {
+        return this.createdAt;
+    }
+
+    public String id() {
+        return this.id.value();
     }
 }

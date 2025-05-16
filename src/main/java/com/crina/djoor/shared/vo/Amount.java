@@ -1,6 +1,6 @@
 package com.crina.djoor.shared.vo;
 
-import com.crina.djoor.order.domain.snapshot.PromoCodeSnapshot;
+import com.crina.djoor.order.domain.PromoCode;
 
 import java.util.Date;
 
@@ -10,15 +10,15 @@ public record Amount(double value) {
         return new Amount(amount);
     }
 
-    public Amount applyDiscount(PromoCodeSnapshot promoCodeSnapshot) {
+    public Amount applyDiscount(PromoCode promoCode) {
         Date currentDate = new Date();
-        if (promoCodeSnapshot == null) {
+        if (promoCode == null) {
             return new Amount(this.value());
         }
-        if (!promoCodeSnapshot.isValid(currentDate))
+        if (!promoCode.isValid(currentDate))
             return new Amount(this.value());
 
-        return new Amount(this.value() * (1 - promoCodeSnapshot.discountPercentage()));
+        return new Amount(this.value() * (1 - promoCode.discountPercentage()));
     }
 
     /*public Amount computeOwnerCommission(double ownerCommissionPercentage) {

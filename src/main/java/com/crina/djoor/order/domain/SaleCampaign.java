@@ -64,4 +64,16 @@ public class SaleCampaign {
                 this.discountedProductIds
         );
     }
+
+    public boolean isActive(Date currentDate) {
+        return !currentDate.before(startDate) && !currentDate.after(endDate);
+    }
+
+    public boolean isProductInSale(String productId) {
+        return discountedProductIds.contains(productId);
+    }
+
+    public double applyDiscount(double originalPrice) {
+        return originalPrice * (1 - percentage / 100.0);
+    }
 }

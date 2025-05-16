@@ -38,4 +38,12 @@ public class PromoCode {
                 this.isActive
         );
     }
+
+    public boolean isValid(Date date) {
+        return isActive && date.before(expirationDate);
+    }
+
+    public double discountPercentage() {
+        return discountPercentage;
+    }
 }
